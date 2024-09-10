@@ -7,18 +7,30 @@ app.use(bodyParser.json());
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }))
 
-/* https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${key} */
+const msToMPH = (ms) => ms / 0.44704
+const msToKPH = (ms) => ms * 3.6
 
-async function aqiData(lat, lon, key) {
+async function humidityData(lat, lon, key) {
 
-    let response = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=1&lon=1&appid=d5bbe0e7f04802cada0fb607ce9dba6d`);
+    let response = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${key}`);
     let data = await response.json();
-    return {'humidity': data['main']['humidity']}
+    let jsonData = {'humidity': data['main']['humidity'] + ' %',
+                    'windSpeedms': data['wind']['speed'],
+                    'windDegree': data['wind']['deg']
+    }
+
+    jsonData['windSpeedMPH'] = Math.round(msToMPH(jsonData['windSpeedms']) * 10) / 10
+    jsonData['windSpeedKMH'] = Math.round(msToKPH(jsonData['windSpeedms']) * 10) / 10
+
+    return jsonData
 };
 
-app.post("/aqiData", (req, res) => {
-    aqiData(req.body["lat"], req.body["lon"], req.body["key"]).then((data) =>
-        res.send(data))
+app.post("/humidityData", (req, res) => {
+    console.log(req.body)
+    humidityData(req.body["lat"], req.body["lon"], req.body["key"]).then((data) => {
+        res.send(data)
+        console.log(data)
+    })
 })
 
 app.listen(PORT, () => {
